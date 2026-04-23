@@ -1,89 +1,68 @@
-local player = game.Players.LocalPlayer
-local pGui = player:WaitForChild("PlayerGui")
+-- Визначаємо куди пхати меню: в CoreGui для читів, або в PlayerGui для Studio
+local parentObj = nil
+local success, coreGui = pcall(function() return game:GetService("CoreGui") end)
 
--- 1. СТВОРЕННЯ ІНТЕРФЕЙСУ (GUI) АВТОМАТИЧНО
-local screenGui = script.Parent -- Використовуємо твій існуючий ScreenGui
-if not screenGui:IsA("ScreenGui") then
-	screenGui = Instance.new("ScreenGui", pGui)
+if success and coreGui then
+    parentObj = coreGui
+else
+    parentObj = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 end
 
--- Основне вікно
+-- Видаляємо стару версію, щоб не плодити копії
+local oldUI = parentObj:FindFirstChild("KotomYkHub")
+if oldUI then oldUI:Destroy() end
+
+-- Створюємо ScreenGui
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "KotomYkHub"
+screenGui.Parent = parentObj
+screenGui.ResetOnSpawn = false
+
+-- Головне вікно
 local mainFrame = Instance.new("Frame")
-mainFrame.Name = "CheatMenu"
-mainFrame.Size = UDim2.new(0, 200, 0, 100)
+mainFrame.Name = "Main"
+mainFrame.Size = UDim2.new(0, 200, 0, 120)
 mainFrame.Position = UDim2.new(0.5, -100, 0.4, 0)
 mainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
-mainFrame.BorderSizePixel = 2
 mainFrame.Active = true
-mainFrame.Draggable = true -- Меню можна перетягувати мишкою
+mainFrame.Draggable = true 
 mainFrame.Parent = screenGui
+
+-- Закруглення
+local corner = Instance.new("UICorner", mainFrame)
 
 -- Заголовок
 local title = Instance.new("TextLabel")
-title.Text = "KOTOMYK HUB"
 title.Size = UDim2.new(1, 0, 0, 30)
+title.Text = "KOTOMYK HUB"
 title.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
 title.Parent = mainFrame
 
--- Кнопка ESP
+-- Кнопка
 local espButton = Instance.new("TextButton")
-espButton.Name = "ESPButton"
-espButton.Text = "ESP: OFF"
 espButton.Size = UDim2.new(0.8, 0, 0, 40)
 espButton.Position = UDim2.new(0.1, 0, 0.45, 0)
-espButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+espButton.Text = "ESP: OFF"
+espButton.BackgroundColor3 = Color3.fromRGB(150, 0, 0)
 espButton.TextColor3 = Color3.fromRGB(255, 255, 255)
-espButton.Font = Enum.Font.SourceSansBold
-espButton.TextSize = 18
 espButton.Parent = mainFrame
 
--- 2. ЛОГІКА ВХ (ESP)
+-- Логіка
 local espActive = false
-
-local function updateESP()
-	for _, otherPlayer in pairs(game.Players:GetPlayers()) do
-		if otherPlayer ~= player and otherPlayer.Character then
-			local char = otherPlayer.Character
-			local highlight = char:FindFirstChild("ESPHighlight")
-
-			if espActive then
-				if not highlight then
-					highlight = Instance.new("Highlight")
-					highlight.Name = "ESPHighlight"
-					highlight.Parent = char
-				end
-				highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-				highlight.FillColor = Color3.fromRGB(255, 0, 0)
-				highlight.OutlineColor = Color3.fromRGB(255, 255, 255)
-				highlight.Enabled = true
-			elseif highlight then
-				highlight.Enabled = false
-			end
-		end
-	end
-end
-
--- Обробка кнопки
 espButton.MouseButton1Click:Connect(function()
-	espActive = not espActive
-
-	if espActive then
-		espButton.Text = "ESP: ON"
-		espButton.BackgroundColor3 = Color3.fromRGB(50, 200, 50)
-	else
-		espButton.Text = "ESP: OFF"
-		espButton.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-	end
-
-	updateESP()
+    espActive = not espActive
+    espButton.Text = espActive and "ESP: ON" or "ESP: OFF"
+    espButton.BackgroundColor3 = espActive and Color3.fromRGB(0, 150, 0) or Color3.fromRGB(150, 0, 0)
+    
+    for _, p in pairs(game.Players:GetPlayers()) do
+        if p ~= game.Players.LocalPlayer and p.Character then
+            local hl = p.Character:FindFirstChild("ESPHl") or Instance.new("Highlight", p.Character)
+            hl.Name = "ESPHl"
+            hl.Enabled = espActive
+            hl.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+        end
+    end
 end)
 
--- Постійне оновлення (щоб підсвітка не зникала при респавні)
-task.spawn(function()
-	while task.wait(2) do
-		if espActive then
-			updateESP()
-		end
-	end
-end)
+print("KOTOMYK HUB: Ready for Studio and Solara!")
